@@ -1,14 +1,20 @@
 # Ray Tracing in One Weekend  
 
-Projeto para calcular a trajetória de raios de luz através de objetos. Desenvolvido com base no conteúdo do livro [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
+Project to calculate the trajectory of light rays through objects and generate images. Made following the book [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
 
+![spheres](images/spheres-0.png)  
+![spheres](images/spheres-1.png)  
+![spheres](images/spheres-2.png)  
 
-![esferas](images/image-21.png)
+# update
+Due to the time taken to computate one single image in a single thread changes were made to the algorithm.  
 
-## update
-Updates to use multithreading to accelerate iamge processing
+## dependencies
+* **image**: to save the generated values as a png image  
+* **rand**: to generate random values  
+* **rayon**: for paralellism  
 
-### benchmarks
+## benchmarks
 benchmarks to generate 400x266 and 1200x800 images.
 ```bash
 # before
@@ -25,3 +31,10 @@ benchmarks to generate 400x266 and 1200x800 images.
 1200x800 = 1535,13s user 1,80s system 757% cpu 3:22,94 total
 ```
 Rust Rayon had a better usage of the CPU and thus giving a better time than using Rust native threads.
+
+## TODO
+- [x] multi-threading  
+- [x] save images as png  
+- [ ] implement CLI options  
+- [ ] update to version 4 of book  
+- [ ] implement GPU processing  

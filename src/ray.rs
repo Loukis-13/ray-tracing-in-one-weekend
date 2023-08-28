@@ -8,7 +8,7 @@ pub struct Ray {
 
 impl Ray {
     pub fn from(origin: Point3, direction: Vec3) -> Self {
-        Self { origin: origin, direction: direction }
+        Self { origin, direction }
     }
 
     pub fn at(&self, t: f64) -> Point3 {

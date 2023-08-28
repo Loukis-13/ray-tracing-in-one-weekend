@@ -6,9 +6,7 @@ mod ray;
 mod shape;
 mod vec3;
 
-use std::{error::Error, sync::Arc, thread};
-
-// use rayon::prelude::*;
+use rayon::prelude::*;
 
 use camera::Camera;
 use hittable::{Hittable, HittableList};
@@ -26,7 +24,11 @@ fn random_scene() -> HittableList {
             1000.0,
             Lambertian::from(Color(0.5, 0.5, 0.5)),
         )),
-        Box::new(Sphere::from(Point3(0.0, 1.0, 0.0), 1.0, Dielectric::from(1.5))),
+        Box::new(Sphere::from(
+            Point3(0.0, 1.0, 0.0),
+            1.0,
+            Dielectric::from(1.5)
+        )),
         Box::new(Sphere::from(
             Point3(-4.0, 1.0, 0.0),
             1.0,
@@ -48,22 +50,26 @@ fn random_scene() -> HittableList {
 
             if (center - origin).length() > 0.9 {
                 if choose_mat < 0.8 {
-                    // diffuse
+                    // 80% diffuse
                     world.add(Sphere::from(
                         center,
                         0.2,
                         Lambertian::from(Color::random(0.0, 1.0) * Color::random(0.0, 1.0)),
                     ));
                 } else if choose_mat < 0.95 {
-                    // metal
+                    // 15% metal
                     world.add(Sphere::from(
                         center,
                         0.2,
                         Metal::from(Color::random(0.5, 1.0), random::<f64>() / 2.0),
                     ));
                 } else {
-                    // glass
-                    world.add(Sphere::from(center, 0.2, Dielectric::from(1.5)));
+                    // 5% glass
+                    world.add(Sphere::from(
+                        center, 
+                        0.2, 
+                        Dielectric::from(1.5)
+                    ));
                 }
             }
         }
@@ -90,7 +96,7 @@ fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     Color(1.0, 1.0, 1.0) * (1.0 - t) + Color(0.5, 0.7, 1.0) * t
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     // image
     let aspect_ratio = 3.0 / 2.0;
     let image_width = 1200u32;
@@ -100,100 +106,40 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // world
     let world = random_scene();
-    // HittableList::from(vec![
-    //     Box::new(Sphere::from(
-    //         Point3(0.0, -1000.0, 0.0),
-    //         1000.0,
-    //         Lambertian::from(Color(0.5, 0.5, 0.5)),
-    //     )),
-    //     Box::new(Sphere::from(Point3(0.0, 1.0, 0.0), 1.0, Dielectric::from(1.5))),
-    //     Box::new(Sphere::from(
-    //         Point3(-4.0, 1.0, 0.0),
-    //         1.0,
-    //         Lambertian::from(Color(0.4, 0.2, 0.1)),
-    //     )),
-    //     Box::new(Sphere::from(
-    //         Point3(4.0, 1.0, 0.0),
-    //         1.0,
-    //         Metal::from(Color(0.7, 0.6, 0.5), 0.0),
-    //     )),
-    // ]);
 
     // camera
     let camera = Camera::new(
-        Point3(13.0, 2.0, 3.0),
+        Point3(0.0, 10.0, 45.0),
         Point3(0.0, 0.0, 0.0),
         Vec3(0.0, 1.0, 0.0),
-        20.0,
+        15.0,
         aspect_ratio,
         0.1,
-        10.0,
+        40.0,
     );
 
-    // threads
-
-    let threads_num = std::thread::available_parallelism()?.get();
-    let steps = (image_height as f64 / threads_num as f64).ceil() as usize;
-    let mut handles = vec![];
-    let arc_camera = Arc::new(camera);
-    let arc_world = Arc::new(world);
-
-    for t in (0..threads_num).rev() {
-        let camera = arc_camera.clone();
-        let world = arc_world.clone();
-
-        handles.push(thread::spawn(move || {
-            let mut pixels = vec![];
-            for i in ((steps * t)..((steps * (t + 1)).min(image_height as usize))).rev() {
-                for j in 0..image_width {
-                    let mut pixel_color = Color::default();
-                    for _ in 0..samples_per_pixel {
-                        let u = (j as f64 + random::<f64>()) / (image_width - 1) as f64;
-                        let v = (i as f64 + random::<f64>()) as f64 / (image_height - 1) as f64;
-                        let r = camera.get_ray(u, v);
-                        pixel_color += ray_color(&r, &*world, max_depth);
-                    }
-                    pixels.extend(pixel_color.color_to_u8(samples_per_pixel));
-                }
-            }
-            pixels
-        }))
-    }
-
     // render
-    println!("Progress:");
+    let image = (0..image_height).into_par_iter().rev().flat_map(|i| {
+        (0..image_width).flat_map(|j| {
+            let mut pixel_color = Color::default();
+            for _ in 0..samples_per_pixel {
+                let u = (j as f64 + random::<f64>()) / (image_width - 1) as f64;
+                let v = (i as f64 + random::<f64>()) as f64 / (image_height - 1) as f64;
+                let r = camera.get_ray(u, v);
+                pixel_color += ray_color(&r, &world, max_depth);
+            }
 
-    let mut image = Vec::with_capacity((image_width * image_width * 3) as usize);
-    for (i, handle) in handles.into_iter().enumerate() {
-        let pixels = handle.join().unwrap();
-        println!("{:.2}%", (i as f32 + 1.0) / (threads_num as f32) * 100.0);
-        image.extend(pixels);
-    }
+            pixel_color.color_to_u8(samples_per_pixel)
+        }).collect::<Vec<u8>>()
+    }).collect::<Vec<u8>>();
 
-    // let image = (0..image_height).into_par_iter().rev().flat_map(|i| {
-    //     (0..image_width).flat_map(|j| {
-    //         let mut pixel_color = Color::default();
-    //         for _ in 0..samples_per_pixel {
-    //             let u = (j as f64 + random::<f64>()) / (image_width - 1) as f64;
-    //             let v = (i as f64 + random::<f64>()) as f64 / (image_height - 1) as f64;
-    //             let r = camera.get_ray(u, v);
-    //             pixel_color += ray_color(&r, &world, max_depth);
-    //         }
-
-    //         pixel_color.color_to_u8(samples_per_pixel)
-    //     }).collect::<Vec<_>>()
-    // }).collect::<Vec<_>>();
-
+    // save
     image::save_buffer_with_format(
-        "benchmar3.png",
+        "spheres.png",
         &image,
         image_width,
         image_height,
         image::ColorType::Rgb8,
         image::ImageFormat::Png,
-    )?;
-
-    println!("Done.");
-
-    Ok(())
+    ).expect("Error in saving image");
 }
