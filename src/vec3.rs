@@ -5,13 +5,8 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 pub struct Vec3(pub f64, pub f64, pub f64);
 
 pub use Vec3 as Point3;
-pub use Vec3 as Color;
 
 impl Vec3 {
-    pub fn new() -> Self {
-        Self(0.0, 0.0, 0.0)
-    }
-
     pub fn from(x: f64, y: f64, z: f64) -> Self {
         Self(x, y, z)
     }

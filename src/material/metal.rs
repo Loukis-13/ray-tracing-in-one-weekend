@@ -1,6 +1,7 @@
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
-use crate::vec3::{self, Color};
+use crate::vec3;
+use crate::color::Color;
 
 use super::material::Material;
 

@@ -3,15 +3,15 @@ use crate::ray::Ray;
 
 #[derive(Default)]
 pub struct HittableList {
-    pub objects: Vec<Box<dyn Hittable>>,
+    pub objects: Vec<Box<dyn Hittable + Sync + Send>>,
 }
 
 impl HittableList {
-    pub fn from(objects: Vec<Box<dyn Hittable>>) -> Self {
+    pub fn from(objects: Vec<Box<dyn Hittable + Sync + Send>>) -> Self {
         Self { objects }
     }
 
-    pub fn add(&mut self, object: impl Hittable + 'static) {
+    pub fn add(&mut self, object: impl Hittable + Sync + Send + 'static) {
         self.objects.push(Box::new(object))
     }
 }
